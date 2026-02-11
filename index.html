@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>校园生活全能助手 - 完善版</title>
+    <style>
+        :root { --primary: #4f46e5; --secondary: #10b981; --accent: #f59e0b; --bg: #f9fafb; --text: #1f2937; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'PingFang SC', system-ui; }
+        body { background: var(--bg); color: var(--text); padding-bottom: 40px; }
+
+        /* 顶部导航 */
+        header { background: #fff; padding: 1rem 5%; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.06); position: sticky; top: 0; z-index: 1000; }
+        .logo { font-size: 1.4rem; font-weight: 800; color: var(--primary); cursor: pointer; }
+        nav { display: flex; gap: 15px; }
+        .nav-link { padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.3s; }
+        .nav-link.active { background: var(--primary); color: white; }
+        .user-section { display: flex; align-items: center; gap: 12px; }
+        .login-btn { background: #333; color: white; border: none; padding: 8px 18px; border-radius: 20px; cursor: pointer; }
+
+        /* 主体布局 */
+        main { max-width: 1200px; margin: 25px auto; padding: 0 20px; }
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .btn-main { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        
+        /* 列表展示区 */
+        .content-section { display: none; animation: fadeIn 0.4s; }
+        .content-section.active { display: block; }
+
+        /* 二手商品网格 */
+        .market-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
+        .card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: 0.3s; position: relative; }
+        .card:hover { transform: translateY(-5px); }
+        .card-img { width: 100%; height: 200px; object-fit: cover; background: #eee; }
+        .card-body { padding: 15px; }
+        .card-price { color: #ef4444; font-size: 1.3rem; font-weight: 700; margin: 8px 0; }
+        .pay-qr-badge { position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,0.9); padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; border: 1px solid #ddd; }
+
+        /* 列表样式 (拼车/兼职) */
+        .list-item { background: white; padding: 20px; border-radius: 12px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.04); }
+        .info-main h3 { margin-bottom: 8px; color: var(--primary); }
+        .info-sub { color: #6b7280; font-size: 0.9rem; display: flex; gap: 15px; }
+        .tag { background: #e0e7ff; color: var(--primary); padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; }
+
+        /* 模态框 (发布界面) */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; align-items: center; justify-content: center; }
+        .modal.open { display: flex; }
+        .modal-content { background: white; width: 90%; max-width: 500px; padding: 25px; border-radius: 16px; max-height: 90vh; overflow-y: auto; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.9rem; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; }
+        .image-preview-box { display: flex; gap: 10px; margin-top: 5px; }
+        .preview-img { width: 60px; height: 60px; border-radius: 4px; border: 1px solid #eee; object-fit: cover; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo" onclick="switchSection('market')">🏫 CampusLife</div>
+        <nav>
+            <div class="nav-link active" onclick="switchSection('market')">二手集市</div>
+            <div class="nav-link" onclick="switchSection('carpool')">拼车出行</div>
+            <div class="nav-link" onclick="switchSection('jobs')">兼职广场</div>
+        </nav>
+        <div class="user-section">
+            <button id="loginBtn" class="login-btn" onclick="handleLogin()">用户登录</button>
+            <div id="userProfile" style="display:none; font-weight:bold;">
+                同学，你好 👋 <span style="font-size:0.8rem; color:var(--primary); cursor:pointer" onclick="handleLogin()">[退出]</span>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section id="marketSection" class="content-section active">
+            <div class="section-header">
+                <h2>二手商品购买</h2>
+                <button class="btn-main" onclick="openModal('marketModal')">+ 发布商品</button>
+            </div>
+            <div class="market-grid" id="marketList">
+                </div>
+        </section>
+
+        <section id="carpoolSection" class="content-section">
+            <div class="section-header">
+                <h2>拼车/租车信息</h2>
+                <button class="btn-main" onclick="openModal('carpoolModal')">+ 发布行程</button>
+            </div>
+            <div id="carpoolList">
+                </div>
+        </section>
+
+        <section id="jobsSection" class="content-section">
+            <div class="section-header">
+                <h2>兼职信息招募</h2>
+                <button class="btn-main" onclick="openModal('jobsModal')">+ 发布兼职</button>
+            </div>
+            <div id="jobsList">
+                </div>
+        </section>
+    </main>
+
+    <div id="marketModal" class="modal">
+        <div class="modal-content">
+            <h3>发布二手宝贝</h3>
+            <form onsubmit="submitMarket(event)">
+                <div class="form-group">
+                    <label>商品名称</label>
+                    <input type="text" id="m_name" placeholder="如：九成新iPad Air" required>
+                </div>
+                <div class="form-group">
+                    <label>转让价格 (¥)</label>
+                    <input type="number" id="m_price" required>
+                </div>
+                <div class="form-group">
+                    <label>联系方式 (微信/手机)</label>
+                    <input type="text" id="m_contact" placeholder="让买家能找到你" required>
+                </div>
+                <div class="form-group">
+                    <label>上传商品图片</label>
+                    <input type="file" accept="image/*" id="m_img" onchange="previewImage(this, 'm_pre')">
+                    <div class="image-preview-box" id="m_pre"></div>
+                </div>
+                <div class="form-group">
+                    <label>上传收款码 (支付用)</label>
+                    <input type="file" accept="image/*" id="m_qr" onchange="previewImage(this, 'm_qr_pre')">
+                    <div class="image-preview-box" id="m_qr_pre"></div>
+                </div>
+                <button type="submit" class="btn-main" style="width:100%">立即发布</button>
+                <button type="button" onclick="closeAllModals()" style="width:100%; margin-top:10px; border:none; background:none; cursor:pointer">取消</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="carpoolModal" class="modal">
+        <div class="modal-content">
+            <h3>发布拼车/租车信息</h3>
+            <form onsubmit="submitCarpool(event)">
+                <div class="form-group"><label>出发地</label><input type="text" id="c_from" required></div>
+                <div class="form-group"><label>目的地</label><input type="text" id="c_to" required></div>
+                <div class="form-group"><label>出发时间</label><input type="datetime-local" id="c_time" required></div>
+                <div class="form-group"><label>费用 (¥/人)</label><input type="number" id="c_price" required></div>
+                <div class="form-group"><label>你的联系方式</label><input type="text" id="c_contact" required></div>
+                <button type="submit" class="btn-main" style="width:100%">确认发布行程</button>
+                <button type="button" onclick="closeAllModals()" style="width:100%; margin-top:10px; border:none; background:none; cursor:pointer">取消</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="jobsModal" class="modal">
+        <div class="modal-content">
+            <h3>发布兼职招募</h3>
+            <form onsubmit="submitJob(event)">
+                <div class="form-group"><label>职位名称</label><input type="text" id="j_title" placeholder="如：图书馆整理员" required></div>
+                <div class="form-group"><label>薪资水平 (如: 20/小时)</label><input type="text" id="j_pay" required></div>
+                <div class="form-group"><label>工作详情</label><textarea id="j_desc" rows="3"></textarea></div>
+                <div class="form-group"><label>负责人联系方式</label><input type="text" id="j_contact" required></div>
+                <button type="submit" class="btn-main" style="width:100%">发布招聘信息</button>
+                <button type="button" onclick="closeAllModals()" style="width:100%; margin-top:10px; border:none; background:none; cursor:pointer">取消</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let isLogin = false;
+        
+        // 数据存储容器
+        const db = {
+            market: [],
+            carpool: [],
+            jobs: []
+        };
+
+        // 核心：切换板块
+        function switchSection(id) {
+            document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            document.getElementById(id + 'Section').classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // 模拟登录
+        function handleLogin() {
+            isLogin = !isLogin;
+            document.getElementById('loginBtn').style.display = isLogin ? 'none' : 'block';
+            document.getElementById('userProfile').style.display = isLogin ? 'block' : 'none';
+            if(isLogin) alert("登录成功！");
+        }
+
+        // 模态框控制
+        function openModal(id) {
+            if(!isLogin) return alert("请先登录账户！");
+            document.getElementById(id).classList.add('open');
+        }
+
+        function closeAllModals() {
+            document.querySelectorAll('.modal').forEach(m => m.classList.remove('open'));
+        }
+
+        // 图片预览逻辑 (利用本地内存地址)
+        function previewImage(input, preId) {
+            const box = document.getElementById(preId);
+            box.innerHTML = '';
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.className = 'preview-img';
+                    box.appendChild(img);
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // --- 提交数据逻辑 ---
+
+        function submitMarket(e) {
+            e.preventDefault();
+            const newItem = {
+                id: Date.now(),
+                name: document.getElementById('m_name').value,
+                price: document.getElementById('m_price').value,
+                contact: document.getElementById('m_contact').value,
+                img: document.querySelector('#m_pre img')?.src || '',
+                qr: document.querySelector('#m_qr_pre img')?.src || ''
+            };
+            db.market.unshift(newItem);
+            renderMarket();
+            closeAllModals();
+            e.target.reset();
+            document.getElementById('m_pre').innerHTML = '';
+            document.getElementById('m_qr_pre').innerHTML = '';
+        }
+
+        function renderMarket() {
+            const list = document.getElementById('marketList');
+            list.innerHTML = db.market.map(item => `
+                <div class="card">
+                    ${item.qr ? '<span class="pay-qr-badge">附支付码</span>' : ''}
+                    <img src="${item.img || 'https://via.placeholder.com/300x200?text=No+Image'}" class="card-img">
+                    <div class="card-body">
+                        <span class="tag">二手闲置</span>
+                        <div class="card-title" style="font-weight:bold; margin-top:5px;">${item.name}</div>
+                        <div class="card-price">¥${item.price}</div>
+                        <div style="font-size:0.8rem; color:#666;">联系方式: ${item.contact}</div>
+                        <button class="btn-main" style="width:100%; margin-top:10px; background:var(--secondary)" onclick="alert('请联系卖家后，扫描商品附带的支付码进行交易')">立即购买</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function submitCarpool(e) {
+            e.preventDefault();
+            const newItem = {
+                from: document.getElementById('c_from').value,
+                to: document.getElementById('c_to').value,
+                time: document.getElementById('c_time').value.replace('T', ' '),
+                price: document.getElementById('c_price').value,
+                contact: document.getElementById('c_contact').value
+            };
+            db.carpool.unshift(newItem);
+            renderCarpool();
+            closeAllModals();
+            e.target.reset();
+        }
+
+        function renderCarpool() {
+            const list = document.getElementById('carpoolList');
+            list.innerHTML = db.carpool.map(item => `
+                <div class="list-item">
+                    <div class="info-main">
+                        <span class="tag">车找人</span>
+                        <h3>${item.from} ➡️ ${item.to}</h3>
+                        <div class="info-sub">
+                            <span>📅 时间: ${item.time}</span>
+                            <span>📞 联系: ${item.contact}</span>
+                        </div>
+                    </div>
+                    <div style="text-align:right">
+                        <div style="color:var(--accent); font-weight:bold; font-size:1.2rem;">¥${item.price}/人</div>
+                        <button class="btn-main" style="padding:5px 15px; margin-top:5px; font-size:0.8rem;" onclick="alert('请拨打联系电话或添加微信进行确认')">申请加入</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function submitJob(e) {
+            e.preventDefault();
+            const newItem = {
+                title: document.getElementById('j_title').value,
+                pay: document.getElementById('j_pay').value,
+                desc: document.getElementById('j_desc').value,
+                contact: document.getElementById('j_contact').value
+            };
+            db.jobs.unshift(newItem);
+            renderJobs();
+            closeAllModals();
+            e.target.reset();
+        }
+
+        function renderJobs() {
+            const list = document.getElementById('jobsList');
+            list.innerHTML = db.jobs.map(item => `
+                <div class="list-item">
+                    <div class="info-main">
+                        <h3>${item.title}</h3>
+                        <p style="font-size:0.85rem; color:#666; margin-bottom:8px;">${item.desc}</p>
+                        <div class="info-sub">
+                            <span>💰 薪资: <b style="color:var(--secondary)">${item.pay}</b></span>
+                            <span>👤 负责人: ${item.contact}</span>
+                        </div>
+                    </div>
+                    <button class="btn-main" onclick="alert('详情已发送至您的私信，请及时联系负责人')">查看详情</button>
+                </div>
+            `).join('');
+        }
+
+    </script>
+</body>
+</html>
